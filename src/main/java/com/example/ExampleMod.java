@@ -13,16 +13,16 @@ public class ExampleMod implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
-			if (world.dimension().equals(Level.NETHER)) {
-				if (entity.getType().equals(EntityType.GHAST)) {
+		ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> { //処理をイベントに登録
+			if (world.dimension().equals(Level.NETHER)) { //ディメンション == ネザー
+				if (entity.getType().equals(EntityType.GHAST)) { //エンティティ == ガスト
 					double x = entity.getX();
 					double y = entity.getY();
 					double z = entity.getZ();
 
-					if (x >= 0 && x <= 20 && y >= 50 && y <= 100 && z >= 0 && z <= 20) {
+					if (x >= 0 && x <= 20 && y >= 50 && y <= 100 && z >= 0 && z <= 20) { //エンティティのスポーンを破棄する空間
 						LOGGER.info("Ghast discarded at: {}, {}, {}", x, y, z);
-						entity.discard();
+						entity.discard(); //エンティティを破棄
 					}
 				}
 			}
