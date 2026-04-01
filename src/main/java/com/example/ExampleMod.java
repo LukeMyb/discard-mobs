@@ -14,6 +14,9 @@ public class ExampleMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> { //処理をイベントに登録
+			//既にチェック済みの個体（再読み込みや侵入者）はスルーする
+			if (entity.getTags().contains("sg_checked")) return;
+
 			if (world.dimension().equals(Level.NETHER)) { //ディメンション == ネザー
 				if (entity.getType().equals(EntityType.GHAST)) { //エンティティ == ガスト
 					double x = entity.getX();
@@ -23,9 +26,12 @@ public class ExampleMod implements ModInitializer {
 					if (x >= 0 && x <= 20 && y >= 50 && y <= 100 && z >= 0 && z <= 20) { //エンティティのスポーンを破棄する空間
 						LOGGER.info("Ghast discarded at: {}, {}, {}", x, y, z);
 						entity.discard(); //エンティティを破棄
+						return;
 					}
 				}
 			}
+			//範囲外で生き残った新規個体には「チェック済み」タグを付与し、次回以降のロードで消えないようにする
+			entity.addTag("sg_checked");
 		});
 	}
 }
