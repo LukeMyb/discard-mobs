@@ -1,24 +1,31 @@
 package com.example;
 
 import net.fabricmc.api.ModInitializer;
-
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.level.Level;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class ExampleMod implements ModInitializer {
 	public static final String MOD_ID = "modid";
-
-	// This logger is used to write text to the console and the log file.
-	// It is considered best practice to use your mod id as the logger's name.
-	// That way, it's clear which mod wrote info, warnings, and errors.
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	@Override
 	public void onInitialize() {
-		// This code runs as soon as Minecraft is in a mod-load-ready state.
-		// However, some things (like resources) may still be uninitialized.
-		// Proceed with mild caution.
+		ServerEntityEvents.ENTITY_LOAD.register((entity, world) -> {
+			if (world.dimension().equals(Level.NETHER)) {
+				if (entity.getType().equals(EntityType.GHAST)) {
+					double x = entity.getX();
+					double y = entity.getY();
+					double z = entity.getZ();
 
-		LOGGER.info("Hello Fabric world!");
+					if (x >= 0 && x <= 20 && y >= 50 && y <= 100 && z >= 0 && z <= 20) {
+						LOGGER.info("Ghast discarded at: {}, {}, {}", x, y, z);
+						entity.discard();
+					}
+				}
+			}
+		});
 	}
 }
