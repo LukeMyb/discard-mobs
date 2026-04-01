@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
-public class ExampleMod implements ModInitializer {
+public class SpawnBlocker implements ModInitializer {
 	public static final String MOD_ID = "spawn_blocker";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
