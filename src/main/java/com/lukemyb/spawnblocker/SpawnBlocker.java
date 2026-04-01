@@ -1,4 +1,4 @@
-package com.example;
+package com.lukemyb.spawnblocker;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;

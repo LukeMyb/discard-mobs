@@ -15,7 +15,7 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.example.SpawnBlocker"
+			"com.lukemyb.spawnblocker.SpawnBlocker"
 		],
 		"client": [
 			"com.example.ExampleModClient"
