@@ -1,11 +1,11 @@
 {
 	"schemaVersion": 1,
-	"id": "modid",
+	"id": "spawn_blocker",
 	"version": "${version}",
-	"name": "Example mod",
-	"description": "This is an example description! Tell everyone what your mod is about!",
+	"name": "Spawn Blocker",
+	"description": "This enables to block spawn mobs in nether.",
 	"authors": [
-		"Me!"
+		"LukeMyb"
 	],
 	"contact": {
 		"homepage": "https://fabricmc.net/",

@@ -19,7 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Set;
 
 public class ExampleMod implements ModInitializer {
-	public static final String MOD_ID = "modid";
+	public static final String MOD_ID = "spawn_blocker";
 	public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
 	// 環境（バイオーム・構造物）の種類を定義する列挙型
