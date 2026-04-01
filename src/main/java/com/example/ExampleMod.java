@@ -29,17 +29,21 @@ public class ExampleMod implements ModInitializer {
 		OTHER
 	}
 
+	//スキャンを貫通して下の地面をチェックさせる非固形ブロックのリスト
+	private static final Set<Block> PASS_THROUGH_BLOCKS = Set.of(
+			Blocks.FIRE, Blocks.SOUL_FIRE,
+			Blocks.WARPED_ROOTS, Blocks.CRIMSON_ROOTS, Blocks.NETHER_SPROUTS,
+			Blocks.WARPED_FUNGUS, Blocks.CRIMSON_FUNGUS,
+			Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT,
+			Blocks.WEEPING_VINES, Blocks.WEEPING_VINES_PLANT
+	);
+
 	//環境ごとの「自然生成ブロック」リストを定義
 	private static final Set<Block> GENERAL_NETHER_BLOCKS = Set.of(
 			Blocks.NETHERRACK, Blocks.SOUL_SAND, Blocks.SOUL_SOIL, Blocks.BASALT, Blocks.BLACKSTONE,
 			Blocks.MAGMA_BLOCK, Blocks.LAVA, Blocks.CRIMSON_NYLIUM, Blocks.WARPED_NYLIUM,
 			Blocks.BONE_BLOCK, Blocks.GLOWSTONE, Blocks.NETHER_QUARTZ_ORE, Blocks.NETHER_GOLD_ORE, Blocks.ANCIENT_DEBRIS,
-
-			Blocks.WARPED_ROOTS, Blocks.WARPED_WART_BLOCK, Blocks.NETHER_SPROUTS,
-			Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WARPED_FUNGUS,
-			Blocks.CRIMSON_ROOTS, Blocks.NETHER_WART_BLOCK,
-			Blocks.WEEPING_VINES, Blocks.WEEPING_VINES_PLANT, Blocks.CRIMSON_FUNGUS,
-			Blocks.SHROOMLIGHT
+			Blocks.WARPED_WART_BLOCK, Blocks.NETHER_WART_BLOCK, Blocks.SHROOMLIGHT
 			// 砂利(Gravel)は建築材として使うため除外
 	);
 
@@ -48,18 +52,12 @@ public class ExampleMod implements ModInitializer {
 	);
 
 	private static final Set<Block> BASTION_BLOCKS = Set.of(
-			//廃要塞は一般的なネザーブロックに加えて、ブラックストーン系の加工ブロックを自然生成として扱う
 			Blocks.NETHERRACK, Blocks.SOUL_SAND, Blocks.SOUL_SOIL, Blocks.BASALT, Blocks.BLACKSTONE,
 			Blocks.MAGMA_BLOCK, Blocks.LAVA, Blocks.CRIMSON_NYLIUM, Blocks.WARPED_NYLIUM,
 			Blocks.BONE_BLOCK, Blocks.GLOWSTONE, Blocks.NETHER_QUARTZ_ORE, Blocks.NETHER_GOLD_ORE, Blocks.ANCIENT_DEBRIS,
 			Blocks.POLISHED_BLACKSTONE, Blocks.POLISHED_BLACKSTONE_BRICKS, Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS,
 			Blocks.GILDED_BLACKSTONE, Blocks.CHISELED_POLISHED_BLACKSTONE, Blocks.POLISHED_BASALT, Blocks.SMOOTH_BASALT,
-
-			Blocks.WARPED_ROOTS, Blocks.WARPED_WART_BLOCK, Blocks.NETHER_SPROUTS,
-			Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WARPED_FUNGUS,
-			Blocks.CRIMSON_ROOTS, Blocks.NETHER_WART_BLOCK,
-			Blocks.WEEPING_VINES, Blocks.WEEPING_VINES_PLANT, Blocks.CRIMSON_FUNGUS,
-			Blocks.SHROOMLIGHT
+			Blocks.WARPED_WART_BLOCK, Blocks.NETHER_WART_BLOCK, Blocks.SHROOMLIGHT
 	);
 
 	// 指定した座標の環境を取得するヘルパーメソッド
@@ -136,8 +134,8 @@ public class ExampleMod implements ModInitializer {
 					mutablePos.setY(y);
 					BlockState state = world.getBlockState(mutablePos);
 
-					//空気ブロック以外（＝何かしらの固形ブロック）にぶつかったら判定開始
-					if (!state.isAir()) {
+					// 空気、または PASS_THROUGH_BLOCKS に含まれる植物・炎の場合はスキャンを続行する
+					if (!state.isAir() && !PASS_THROUGH_BLOCKS.contains(state.getBlock())) {
 						Block groundBlock = state.getBlock();
 
 						// 足元のブロックが、その環境の許可リストに無ければ破棄
