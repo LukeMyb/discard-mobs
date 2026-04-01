@@ -5,6 +5,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biomes;
@@ -28,12 +29,44 @@ public class ExampleMod implements ModInitializer {
 		OTHER
 	}
 
+	//環境ごとの「自然生成ブロック」リストを定義
+	private static final Set<Block> GENERAL_NETHER_BLOCKS = Set.of(
+			Blocks.NETHERRACK, Blocks.SOUL_SAND, Blocks.SOUL_SOIL, Blocks.BASALT, Blocks.BLACKSTONE,
+			Blocks.MAGMA_BLOCK, Blocks.LAVA, Blocks.CRIMSON_NYLIUM, Blocks.WARPED_NYLIUM,
+			Blocks.BONE_BLOCK, Blocks.GLOWSTONE, Blocks.NETHER_QUARTZ_ORE, Blocks.NETHER_GOLD_ORE, Blocks.ANCIENT_DEBRIS,
+
+			Blocks.WARPED_ROOTS, Blocks.WARPED_WART_BLOCK, Blocks.NETHER_SPROUTS,
+			Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WARPED_FUNGUS,
+			Blocks.CRIMSON_ROOTS, Blocks.NETHER_WART_BLOCK,
+			Blocks.WEEPING_VINES, Blocks.WEEPING_VINES_PLANT, Blocks.CRIMSON_FUNGUS,
+			Blocks.SHROOMLIGHT
+			// 砂利(Gravel)は建築材として使うため除外
+	);
+
+	private static final Set<Block> FORTRESS_BLOCKS = Set.of(
+			Blocks.NETHER_BRICKS //ネザー要塞はネザーレンガのみ許可
+	);
+
+	private static final Set<Block> BASTION_BLOCKS = Set.of(
+			//廃要塞は一般的なネザーブロックに加えて、ブラックストーン系の加工ブロックを自然生成として扱う
+			Blocks.NETHERRACK, Blocks.SOUL_SAND, Blocks.SOUL_SOIL, Blocks.BASALT, Blocks.BLACKSTONE,
+			Blocks.MAGMA_BLOCK, Blocks.LAVA, Blocks.CRIMSON_NYLIUM, Blocks.WARPED_NYLIUM,
+			Blocks.BONE_BLOCK, Blocks.GLOWSTONE, Blocks.NETHER_QUARTZ_ORE, Blocks.NETHER_GOLD_ORE, Blocks.ANCIENT_DEBRIS,
+			Blocks.POLISHED_BLACKSTONE, Blocks.POLISHED_BLACKSTONE_BRICKS, Blocks.CRACKED_POLISHED_BLACKSTONE_BRICKS,
+			Blocks.GILDED_BLACKSTONE, Blocks.CHISELED_POLISHED_BLACKSTONE, Blocks.POLISHED_BASALT, Blocks.SMOOTH_BASALT,
+
+			Blocks.WARPED_ROOTS, Blocks.WARPED_WART_BLOCK, Blocks.NETHER_SPROUTS,
+			Blocks.TWISTING_VINES, Blocks.TWISTING_VINES_PLANT, Blocks.WARPED_FUNGUS,
+			Blocks.CRIMSON_ROOTS, Blocks.NETHER_WART_BLOCK,
+			Blocks.WEEPING_VINES, Blocks.WEEPING_VINES_PLANT, Blocks.CRIMSON_FUNGUS,
+			Blocks.SHROOMLIGHT
+	);
+
 	// 指定した座標の環境を取得するヘルパーメソッド
 	private EnvironmentType getEnvironmentAt(ServerLevel serverLevel, BlockPos pos) {
-		//1. 構造物の判定 (ネザー要塞と廃要塞)
+		//構造物の判定 (ネザー要塞と廃要塞)
 		var structureRegistry = serverLevel.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
-		// 1.21 では getOrThrow() で Holder（データの器）を取得し、.value() で実体を取り出す
 		var fortress = structureRegistry.getOrThrow(BuiltinStructures.FORTRESS).value();
 		if (serverLevel.structureManager().getStructureWithPieceAt(pos, fortress).isValid()) {
 			return EnvironmentType.NETHER_FORTRESS;
@@ -44,7 +77,7 @@ public class ExampleMod implements ModInitializer {
 			return EnvironmentType.BASTION_REMNANT;
 		}
 
-		//2. バイオームの判定
+		//バイオームの判定
 		var biome = serverLevel.getBiome(pos);
 		if (biome.is(Biomes.NETHER_WASTES)) return EnvironmentType.NETHER_WASTES;
 		if (biome.is(Biomes.CRIMSON_FOREST)) return EnvironmentType.CRIMSON_FOREST;
@@ -80,37 +113,45 @@ public class ExampleMod implements ModInitializer {
 			//既にチェック済みの個体（再読み込みや侵入者）はスルーする
 			if (entity.getTags().contains("sg_checked")) return;
 
-			// world を ServerLevel として扱えるか確認（構造物判定に必要）
+			//モブ（生き物）以外は処理しない（アイテム消滅バグの防止）
+			if (!(entity instanceof Mob)) return;
+
 			if (world.dimension().equals(Level.NETHER) && world instanceof ServerLevel serverLevel) {
-				// テスト用に環境を取得してログに出力する処理
 				BlockPos pos = entity.blockPosition();
 				EnvironmentType env = getEnvironmentAt(serverLevel, pos);
 				LOGGER.info("Spawn detected. Entity: {}, Environment: {}", entity.getType().getDescription().getString(), env);
 
-				/*if (entity.getType().equals(EntityType.GHAST)) { //エンティティ == ガスト
-					//足元を探索するための座標オブジェクトを作成
-					BlockPos.MutableBlockPos pos = new BlockPos.MutableBlockPos(entity.getX(), entity.getY(), entity.getZ());
+				// 現在の環境に応じた許可ブロックリストを取得
+				Set<Block> allowedBlocks = switch (env) {
+					case NETHER_FORTRESS -> FORTRESS_BLOCKS;
+					case BASTION_REMNANT -> BASTION_BLOCKS;
+					default -> GENERAL_NETHER_BLOCKS;
+				};
 
-					//ガストの現在位置から、世界の最下層に向かって1マスずつ下がって確認する
-					for (int y = (int) entity.getY(); y >= world.getMinY(); y--) {
-						pos.setY(y);
-						BlockState state = world.getBlockState(pos);
+				//足元を探索するための座標オブジェクトを作成
+				BlockPos.MutableBlockPos mutablePos = new BlockPos.MutableBlockPos(entity.getX(), entity.getY(), entity.getZ());
 
-						//空気ブロック以外（＝何かしらの固形ブロック）にぶつかったら判定開始
-						if (!state.isAir()) {
-							Block groundBlock = state.getBlock();
+				//現在位置から、世界の最下層に向かって1マスずつ下がって確認する
+				for (int y = (int) entity.getY(); y >= world.getMinY(); y--) {
+					mutablePos.setY(y);
+					BlockState state = world.getBlockState(mutablePos);
 
-							//そのブロックが「自然生成ブロック」のリストに含まれていない場合（＝人工物）
-							if (!NATURAL_NETHER_BLOCKS.contains(groundBlock)) {
-								LOGGER.info("Ghast discarded above artificial block: {}", groundBlock.getName().getString());
-								entity.discard();
-								return; //破棄したらここで処理終了
-							}
-							//自然生成ブロックだった場合は、安全な湧きなので探索ループを抜ける
-							break;
+					//空気ブロック以外（＝何かしらの固形ブロック）にぶつかったら判定開始
+					if (!state.isAir()) {
+						Block groundBlock = state.getBlock();
+
+						// 足元のブロックが、その環境の許可リストに無ければ破棄
+						if (!allowedBlocks.contains(groundBlock)) {
+							LOGGER.info("{} discarded above artificial block: {} in {}",
+								entity.getType().getDescription().getString(),
+								groundBlock.getName().getString(),
+								env);
+							entity.discard();
+							return;
 						}
+						break;
 					}
-				}*/
+				}
 			}
 			//範囲外で生き残った新規個体には「チェック済み」タグを付与し、次回以降のロードで消えないようにする
 			entity.addTag("sg_checked");
