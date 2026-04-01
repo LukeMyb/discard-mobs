@@ -8,8 +8,7 @@
 		"LukeMyb"
 	],
 	"contact": {
-		"homepage": "https://fabricmc.net/",
-		"sources": "https://github.com/FabricMC/fabric-example-mod"
+		"sources": "https://github.com/LukeMyb/spawn-blocker"
 	},
 	"license": "CC0-1.0",
 	"environment": "*",
