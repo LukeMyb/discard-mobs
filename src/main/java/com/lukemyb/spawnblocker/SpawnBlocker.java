@@ -48,7 +48,8 @@ public class SpawnBlocker implements ModInitializer {
 	);
 
 	private static final Set<Block> FORTRESS_BLOCKS = Set.of(
-			Blocks.NETHER_BRICKS //ネザー要塞はネザーレンガのみ許可
+			Blocks.LAVA,
+			Blocks.NETHER_BRICKS
 	);
 
 	private static final Set<Block> BASTION_BLOCKS = Set.of(
